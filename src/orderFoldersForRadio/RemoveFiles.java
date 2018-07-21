@@ -25,7 +25,7 @@ public class RemoveFiles {
 			return false;
 		}
 		String extension = getFileExtension(file);
-		return !extension.equals("mp3");
+		return !(extension.equals("mp3") || extension.equals("wav"));
 
 	}
 

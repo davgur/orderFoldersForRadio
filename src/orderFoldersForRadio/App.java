@@ -22,6 +22,7 @@ public class App {
 		DIR_SOURCE = waitForEnter("Wright source dir and Press ENTER", DIR_SOURCE);
 		DIR = waitForEnter("Wright result dir and Press ENTER", DIR);
 		RemoveFiles.clear();
+		MoveFiles.move();
 
 	}
 
