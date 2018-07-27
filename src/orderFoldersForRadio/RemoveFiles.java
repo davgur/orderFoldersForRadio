@@ -18,7 +18,7 @@ public class RemoveFiles {
 	}
 
 	private boolean clearRecursive(File dir) {
-		if (!dir.exists() || !dir.isDirectory()) {
+		if (!dir.exists() || dir.getUsableSpace() < 100) {
 			return false;
 		}
 		List<File> files = Arrays.asList(dir.listFiles());

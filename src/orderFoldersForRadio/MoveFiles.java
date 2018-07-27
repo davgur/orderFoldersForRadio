@@ -18,14 +18,18 @@ public class MoveFiles {
 	}
 
 	public void move() {
-		this.getLangs().stream().forEach(lang -> {
-			Arrays.asList(lang.listFiles()).stream().filter(File::isDirectory)
-					.forEach(d -> saveToResult(d.getName(), extractFilesByDirRecursive(d)));
-		});
+		this.getLangs().stream().forEach(f -> buildLangFolder(f));
 	}
 
-	private void saveToResult(String dirName, List<File> files) {
-		File folder = new File(getResultDir(), dirName);
+	private boolean buildLangFolder(File file) {
+		Arrays.asList(file.listFiles()).stream().filter(f -> f.isDirectory())
+				.forEach(d -> saveToResult(getResultDir() + "/" + file.getName() + "/" + d.getName(),
+						extractFilesByDirRecursive(d)));
+		return true;
+	}
+
+	private void saveToResult(String newPath, List<File> files) {
+		File folder = new File(newPath);
 		folder.mkdirs();
 		files.forEach(f -> moveFile(folder, f));
 	}
@@ -41,33 +45,48 @@ public class MoveFiles {
 
 	private List<File> extractFilesByDirRecursive(File dir) {
 		List<File> allFiles = Arrays.asList(dir.listFiles());
-		List<File> files = allFiles.stream().filter(File::isFile).collect(Collectors.toList());
+		List<File> files = allFiles.stream().filter(File::isFile).map(f -> renameWithFolderPrefix(f, dir))
+				.collect(Collectors.toList());
 		allFiles.stream().filter(File::isDirectory).forEach(d -> files.addAll(extractFilesByDirRecursive(d)));
 		return files;
 	}
 
-	/*public File convertWmaToMp3(File file) throws IOException {
-		if (!file.exists()) {
-			return null;
+	private File renameWithFolderPrefix(File file, File parent) {
+		file.renameTo(new File(parent.getPath() + "/" + parent.getName() + "_" + file.getName()));
+		try {
+			file.createNewFile();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-
-		long fileSize = file.length();
-		int frameSize = 160;
-		long numFrames = fileSize / frameSize;
-		AudioFormat audioFormat = new AudioFormat(AudioFormat.Encoding.ULAW, 8000, 8, 1, frameSize, 50, true);
-		AudioInputStream audioInputStream = new AudioInputStream(new FileInputStream(file), audioFormat, numFrames);
-		
-
-        ByteArrayInputStream bais = new ByteArrayInputStream(FileUtils.readFileToByteArray(file));
-		 sourceAIS = AudioSystem.getAudioInputStream(bais);
-         AudioFormat sourceFormat = sourceAIS.getFormat();
-         AudioFormat convertFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, sourceFormat.getSampleRate(), 16, sourceFormat.getChannels(), sourceFormat.getChannels()*2, sourceFormat.getSampleRate(), false);
-        
-		
-		AudioSystem.write(audioInputStream, Type., new File("C:\\file.wav"));
-
 		return file;
-	}*/
+
+	}
+
+	/*
+	 * public File convertWmaToMp3(File file) throws IOException { if
+	 * (!file.exists()) { return null; }
+	 * 
+	 * long fileSize = file.length(); int frameSize = 160; long numFrames = fileSize
+	 * / frameSize; AudioFormat audioFormat = new
+	 * AudioFormat(AudioFormat.Encoding.ULAW, 8000, 8, 1, frameSize, 50, true);
+	 * AudioInputStream audioInputStream = new AudioInputStream(new
+	 * FileInputStream(file), audioFormat, numFrames);
+	 * 
+	 * 
+	 * ByteArrayInputStream bais = new
+	 * ByteArrayInputStream(FileUtils.readFileToByteArray(file)); sourceAIS =
+	 * AudioSystem.getAudioInputStream(bais); AudioFormat sourceFormat =
+	 * sourceAIS.getFormat(); AudioFormat convertFormat = new
+	 * AudioFormat(AudioFormat.Encoding.PCM_SIGNED, sourceFormat.getSampleRate(),
+	 * 16, sourceFormat.getChannels(), sourceFormat.getChannels()*2,
+	 * sourceFormat.getSampleRate(), false);
+	 * 
+	 * 
+	 * AudioSystem.write(audioInputStream, Type., new File("C:\\file.wav"));
+	 * 
+	 * return file; }
+	 */
 
 	/**
 	 * getters and setters
