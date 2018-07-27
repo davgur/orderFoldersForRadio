@@ -3,14 +3,21 @@ package orderFoldersForRadio;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class RemoveFiles {
 
-	public static void clear() {
-		clearRecursive(new File(App.DIR_SOURCE));
+	private List<File> firstLevel;
+
+	public RemoveFiles(String path) {
+		setFirstLevel(Arrays.asList(new File(path).listFiles()));
 	}
 
-	private static boolean clearRecursive(File dir) {
+	public void clear() {
+		this.firstLevel.forEach(f -> clearRecursive(f));
+	}
+
+	private boolean clearRecursive(File dir) {
 		if (!dir.exists() || !dir.isDirectory()) {
 			return false;
 		}
@@ -20,7 +27,7 @@ public class RemoveFiles {
 		return true;
 	}
 
-	private static boolean filesToClear(File file) {
+	private boolean filesToClear(File file) {
 		if (!file.isFile()) {
 			return false;
 		}
@@ -29,12 +36,20 @@ public class RemoveFiles {
 
 	}
 
-	private static String getFileExtension(File file) {
+	private String getFileExtension(File file) {
 		String name = file.getName();
 		try {
 			return name.substring(name.lastIndexOf(".") + 1).toLowerCase();
 		} catch (Exception e) {
 			return "";
 		}
+	}
+
+	public List<File> getFirstLevel() {
+		return this.firstLevel;
+	}
+
+	public void setFirstLevel(List<File> firstLevel) {
+		this.firstLevel = firstLevel.stream().filter(f -> f.isDirectory()).collect(Collectors.toList());
 	}
 }
