@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 public class MoveFiles {
@@ -31,16 +33,21 @@ public class MoveFiles {
 	private void saveToResult(String newPath, List<File> files) {
 		File folder = new File(newPath);
 		folder.mkdirs();
-		files.forEach(f -> moveFile(folder, f));
+		files.stream().collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(File::getUsableSpace))))
+				.forEach(f -> moveFile(folder, f));
 	}
 
-	private void moveFile(File target, File file) {
+	private boolean moveFile(File target, File file) {
 		File newFile = new File(target.getPath() + "/" + file.getName());
+		if (newFile.exists()) {
+			return false;
+		}
 		try {
 			Files.move(file.toPath(), newFile.toPath());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		return true;
 	}
 
 	private List<File> extractFilesByDirRecursive(File dir) {
@@ -56,7 +63,6 @@ public class MoveFiles {
 		try {
 			file.createNewFile();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return file;
