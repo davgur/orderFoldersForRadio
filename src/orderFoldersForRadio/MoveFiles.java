@@ -4,15 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 public class MoveFiles {
 
 	private List<File> langs;
 	private File resultDir;
+	final private String NAME_SEPARATOR = "_";
 
 	public MoveFiles(String sourcePath, String resultPath) throws IOException {
 		setLangs(Arrays.asList(new File(sourcePath).listFiles()));
@@ -20,53 +19,82 @@ public class MoveFiles {
 	}
 
 	public void move() {
-		this.getLangs().stream().forEach(f -> buildLangFolder(f));
+		this.getLangs().forEach(f -> moveByLang(f));
 	}
 
-	private boolean buildLangFolder(File file) {
-		Arrays.asList(file.listFiles()).stream().filter(f -> f.isDirectory())
-				.forEach(d -> saveToResult(getResultDir() + "/" + file.getName() + "/" + d.getName(),
-						extractFilesByDirRecursive(d)));
+	private void moveByLang(File folder) {
+		String target = targetFolderByLang(folder.getName());
+		moveFilesByDirRecursive(folder, target, null);
+	}
+
+	private boolean isExistSameFileInDir(File file, String resultDir2) {
+		File dir = new File(resultDir2);
+		return Arrays.asList(dir.listFiles()).stream().anyMatch(f -> f.getUsableSpace() == file.getUsableSpace());
+	}
+
+	private boolean moveFilesByDirRecursive(File file, String targetPath, String prefix) {
+
+		if (file.getUsableSpace() < 100) {
+			return false;
+		}
+
+		if (file.isFile()) {
+			return moveFile(file, targetPath, prefix);
+		}
+
+		String newPrefix = prefix == null ? ""
+				: prefix.equals("") ? file.getName() : prefix + NAME_SEPARATOR + file.getName();
+		Arrays.asList(file.listFiles()).stream().forEach(d -> moveFilesByDirRecursive(d, targetPath, newPrefix));
 		return true;
 	}
 
-	private void saveToResult(String newPath, List<File> files) {
-		File folder = new File(newPath);
-		folder.mkdirs();
-		files.stream().collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(File::getUsableSpace))))
-				.forEach(f -> moveFile(folder, f));
-	}
+	private boolean moveFile(File file, String targetPath, String prefix) {
+		if (notNeedToMove(file, targetPath)) {
+			return true;
+		}
 
-	private boolean moveFile(File target, File file) {
-		File newFile = new File(target.getPath() + "/" + file.getName());
+		String fileName = prefix == null || prefix.equals("") ? file.getName()
+				: prefix + NAME_SEPARATOR + file.getName();
+		File newFile = new File(targetPath + "/" + fileName);
 		if (newFile.exists()) {
 			return false;
 		}
 		try {
-			Files.move(file.toPath(), newFile.toPath());
+			Files.copy(file.toPath(), newFile.toPath());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		return true;
 	}
 
-	private List<File> extractFilesByDirRecursive(File dir) {
-		List<File> allFiles = Arrays.asList(dir.listFiles());
-		List<File> files = allFiles.stream().filter(File::isFile).map(f -> renameWithFolderPrefix(f, dir))
-				.collect(Collectors.toList());
-		allFiles.stream().filter(File::isDirectory).forEach(d -> files.addAll(extractFilesByDirRecursive(d)));
-		return files;
+	private String targetFolderByLang(String lang) {
+		File folder = new File(getResultDir() + "/" + lang);
+		if (!folder.exists()) {
+			folder.mkdirs();
+		}
+		return folder.getPath();
 	}
 
-	private File renameWithFolderPrefix(File file, File parent) {
-		file.renameTo(new File(parent.getPath() + "/" + parent.getName() + "_" + file.getName()));
-		try {
-			file.createNewFile();
-		} catch (IOException e) {
-			e.printStackTrace();
+	private boolean notNeedToMove(File file, String resultDir) {
+		String extension = getFileExtension(file);
+		if(!(extension.equals("mp3") && !extension.equals("wav"))) {
+			return true;
 		}
-		return file;
+		
+		/*if(isExistSameFileInDir(file, resultDir)) {
+			return true;
+		}*/
+		return false;
+		
+	}
 
+	private String getFileExtension(File file) {
+		String name = file.getName();
+		try {
+			return name.substring(name.lastIndexOf(".") + 1).toLowerCase();
+		} catch (Exception e) {
+			return "";
+		}
 	}
 
 	/*
